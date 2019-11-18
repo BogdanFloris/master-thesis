@@ -1,0 +1,22 @@
+name: release-pdf-on-push
+
+on: push
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@master
+        - uses: xu-cheng/latex-action@master
+          with:
+              root_file: main.tex
+              working_directory: .
+        - uses: majkrzak/create-release@master
+          with:
+              token: ${{ secrets.GITHUB_TOKEN }}
+              name: pdf
+              code: latest
+              prerelease: true
+              assets: >
+                  main.pdf:thesis.pdf:application/pdf
+
