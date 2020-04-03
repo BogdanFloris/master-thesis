@@ -1,6 +1,19 @@
-\documentclass{article}
+\documentclass[12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}
 \usepackage{graphicx, color}
 \usepackage[a4paper,margin=2cm]{geometry}
+\usepackage[numbers]{natbib}
+%\usepackage{refcheck}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
 
 \begin{document}
 
@@ -22,7 +35,7 @@
 %----------------------------------------------------------------------------------------
 
 \HRule \\[0.4cm]
-{ \huge \bfseries Detecting and Addressing Change in Machine\\ Learning based Streaming Data Pipelines}\\[0.4cm] % Title of your document
+{ \huge \bfseries Detecting and Addressing Change in Machine Learning Data Pipelines}\\[0.4cm] % Title of your document
 \HRule \\[0.5cm]
  
 %----------------------------------------------------------------------------------------
@@ -75,15 +88,25 @@ prof. dr. Paul \textsc{Groth}\\
 
 \end{titlepage}
 
-\section{Abstract}
+\chapter*{Abstract}
 
-\section{Acknowledgements}
+Insert abstract here.
+
+\chapter*{Acknowledgements}
+
+Insert the acknowledgements here.
 
 \tableofcontents
 
-\section{Introduction}
+\chapter{Introduction}
 
-\section{Related work}
+Cite: \citep{Heng_Wang_2015}.
+
+\chapter{Related work}
+
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliographystyle{plainnat}
+\bibliography{references.bib}
 
 \end{document}
 
