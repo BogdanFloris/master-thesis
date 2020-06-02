@@ -5,6 +5,8 @@
 \usepackage{graphicx, color}
 \usepackage{float}
 \usepackage{subcaption}
+\usepackage{url}
+\usepackage{amsfonts}
 \usepackage[a4paper,margin=2cm]{geometry}
 \usepackage[authoryear]{natbib}
 %\usepackage{refcheck}
@@ -120,8 +122,6 @@ Insert the acknowledgements here.
 \label{fig:framework}
 \end{figure}
 
-Random citation to check that the references are shown: \citep{Heng_Wang_2015}.
-
 \section{Research Questions}
 
 The main goal of this thesis is to develop a general framework in which machine learning models that are part of streaming data pipelines can detect changes in their output distribution and adapt to them accordingly, while also successfully applying this framework on a specific natural language processing use case that is of interest to Zeta Alpha Vector. This comprehensive topic will be tackled with the following research questions, covered below together with a short description for each question.
@@ -136,19 +136,52 @@ The main goal of this thesis is to develop a general framework in which machine 
 
 \chapter{Background}
 
+In this chapter, we introduce the background needed to support the work done in this thesis. First, we give a brief overview of the framework in which change can occur, a data pipeline, and present the concept of online learning. Then we go into more details about the work that has been done on detecting change in this framework, explaining concept drift. Finally, we also present a small overview of the agent of change that acts of the pipeline, word embeddings.
+
 \section{Streaming Data Pipelines and Online Learning}
 
+Since the turn of the century, as memory became increasingly cheaper and the internet more and more widespread throughout the world, companies have started to collect enormous amounts of data. According to \cite{big-data-beginning-future}, the amount of data doubles every two years, with the trend showing no signs of stopping. This phenomenon has given birth to the field of big data, which aims to develop techinques to process and analyze data that is too large or complex for traditional data analysis tools (\cite{wiki:big-data}). Big data has been forcing companies to slowly move away from traditional machine learning algorithms because these work in an offline setting. In offline machine learning, all data is available from the start and can be fed as batches to train the model, with each sample being used more than once potentially. This method is usually infeasible in the context of big data, so \cite{advances-knowledge-discovery} have proposed a few requirements for these large scale machine learning data pipelines:
+
 \begin{itemize}
-    \item Explain what streams of data are and how data pipelines are more common in an industry setting
-    \item Difference between online learning and traditional batch learning, and argue its pros and cons
+    \item The training of a model should be done continuously and only on blocks of data or separate samples.
+    \item Each sample should only be used once to train the model.
+    \item We should assume that the samples are not stored after they have been seen by the model.
 \end{itemize}
 
-\section{Concept drift}
+The third requirement can be relaxed in practice depending on how much storage is available, and most large scale data pipelines usually store at least a recent window of the data.
+
+Online learning is the type of data analysis usually deployed in streaming data pipelines and is defined as a learner which attemps to solve an online decision task by fitting a model to a sequence of data that arrives one at a time (\cite{onlinelearning}). This is in contrast to offline (batch) machine learning, which requires that all data be present when training the model. The main advantage of online learning is that it is highly scalable in terms of both computing power and storage, which is suitable for big data, but it is also not as performant as batch learning since it only sees the samples once and not in an arbitrary order. According to \cite{onlinelearning}, there are three types of online learning:
 
 \begin{itemize}
-    \item Explain what concept drift is in theory
-    \item Explain the different types of concept drift that are relevant for this thesis with references to the figures
-    \item Explain how the concept will be used in this thesis and how it is a bit different from how it is used in practice
+    \item Supervised online learning where feedback is immediately available.
+    \item Online learning with limited feedback (e.g. only a few samples also have labels).
+    \item Unsupervised online learning where there is no feedback.
+\end{itemize}
+
+The work done in this thesis will mainly focus on supervised online learning, while briefly touching on how a lack of supervision could be handled.
+
+\section{Concept drift} \label{concept-drift}
+
+\subsection{Definition}
+
+Online data pipelines should in theory operate endlessly after being deployed, but the nature of data in general makes the environment in which they operate dynamic. One example would be the change in the distribution of the data samples that arrive at the pipeline. This phenomenon is known in theory as concept drift (\cite{survey-concept-drift}). Take for example a set of data $X$ with a target variable $y$, where we are trying to learn a function $f$, such that $y = f(X)$. Predictions models usually require and assume stationarity in the data (\cite{Heng_Wang_2015}), so if we make this assumption we can fit $f$ once and assume that it works for all subsequent data coming to the pipeline. In practice, however, it might happen that the distribution of $X$ changes, and so the relationship between $X$ and $y$ also does, which makes our estimate of $f$ outdated.
+
+We can use the framework (\ref{fig:framework}) to formally define the problem addressed in this thesis as a concept drift issue. Let $W$ be the initial, unprocessed dataset (which will be described in \ref{wos}) with labels $\mathbb{C}$ that denote classes, $\mathbb{T}$ a set of transformation functions (for example a function that extracts features out of the initial dataset), and $X$ the transformed input $\forall i: x_i = t(w_i)$, where $t \in \mathbb{T}$. We can then use Bayesian Decision Theory (\cite{pattern-classification}) to state the classification task. The probability $P(c_k), c_k \in \mathbb{C}$ is known as the \emph{a priori} and reflects the probability that a samples belongs to class $c_k$. The probability $P(X|c_k)$ is known as the \emph{class conditional density function} and reflects the probability density of $X$ when class $c_k$ is known. When can use Bayes' Rule to solve for the \emph{posterior}:
+
+\begin{equation}
+    P(c_k|X) = \frac{P(X|c_k) P(c_k)}{P(X)}
+\end{equation}
+
+Concept drift occurs if for two time points $t_1$, $t_2$, where $t_2 > t_1$, $\exists x \in X: P_{t_1}(x|c_k) \neq P_{t_2}(x|c_k)$. For our purposes, we will assume that $W$ remains stationary and the distribution shift happens because of a change in the transformation functions $\mathbb{T}$, induced by the pipeline switching from transformation function to another.
+
+\subsection{Concept drift types}
+
+Concept drift is the shift in the distribution of the dataset as samples come to the pipeline, but of equal importance to both detection and overcoming change is the type of concept drift. \cite{survey-concept-drift} describe a few types of drift, but for all intents and purposes, we can distinguish between three types:
+
+\begin{itemize}
+    \item Big abrupt concept drift (figure \ref{fig:big-abrupt-drift}), which is signalled by a big instant change in the distribution that results in the model's accuracy degrading heavily.
+    \item Small abrupt concept drift (figure \ref{fig:small-abrupt-drift}), which is signalled by a small instant change in the distrbution that results in the model's accuracy degrading just slighly.
+    \item Gradual concept drift (figure \ref{fig:gradual-drift}), which is is signalled by small incremental changes in the distribution that in time have the same effect on the model as a big abrupt change but take a much longer time to occur.
 \end{itemize}
 
 \begin{figure}[ht!]
@@ -172,6 +205,18 @@ The main goal of this thesis is to develop a general framework in which machine 
 \label{fig:gradual-drift}
 \end{figure}
 
+As mentioned earlier, the type of concept drift encountered has an impact of both detecting and addressing change. As emphasized in the next section, there are quite a few algorithms that are used in practice to detect concept drift, and most of them are better at detecting a specfici type of drift, so there is no free lunch. As shown in the experiments in the next chapter, gradual drift is harder to detect and it's quite easy to trigger a false positive. When in comes to addressing change, there are again a few options from which to choose. For example, a fine tuning approach might work for a small abrupt drift, but doing it for a big abrupt drift is akin to retraining the model from scratch, something we would like to avoid.
+
+\subsection{Concept drift detection algorithms}
+
+While there has been ample research involved in detecting anomalies in data which is at rest (\cite{survey-outlier-detection} provides a nice overview of the methodologies employed in anomaly detection and \cite{there-and-back-again} comes with a data mining perspective on outlier detection), machine learning pipelines are anything but static. Data is continuously pushed through the system, so the metrics computed from the models’ outputs are adjusted endlessly. Moreover, this uninterrupted flow in the system makes storing all these metrics infeasible, so the pipeline must be able to make a decision on whether or not a concept drift occurred based only on the most recent samples.
+
+\cite{detecting-change-in-data-streams} wrote one of the pioneering papers on detecting change in data streams and came up with a novel solution that keeps two windows for the incoming stream and comapres the two using a new distance metric that proves to be a good indicator for the degree of change, as it was specifically designed with this in mind. Their method could be improved by using a different method for saving samples, like the space saving algorithm for detecting heavy hitters, as described in \cite{hierarchical-heavy-hitters}. \cite{onlineanomalydetection} uses more simple distance metrics like relative entropy and Pearson correlation, but the approach is tailored towards big data streams. ADWIN (\cite{adwin}) improves on \cite{detecting-change-in-data-streams} by making the size of the window adaptable, resizing it according to the rate of change observed from the data in the window itself. Two methods that are especially suited for detecting drift in classification tasks using metrics are DDM (\cite{ddm}) and EDDM (\cite{eddm}). Both of them are based on the estimated distribution of the distances between classification errors, but DDM is more suitable for abrupt drift, while EDDM is better for gradual drift. A more state of the art paper, \cite{hht}, presents a novel framework for hierarchical hypothesis testing, a concept drift detector named Hierarchical Linear Four Rates, which achieves great results on type I and II errors.
+
+\subsection{Concept drift adaptation}
+
+Concept drift adaptation is a newer topic of interest in the scientific community, but it is gaining more and more traction as models are becoming increasingly costly to retrain. \cite{hht} mentions that there are two different approaches to address concept drifts in streaming data. Continuing adaptation doesn’t include a concept drift detector, but assumes that the environment will change and either keeps updating the model parameters incrementally (\cite{adwin}), or learns an ensemble of models on different windows in the stream (\cite{incremental-learning-of-concept-drift}). Adaptation with drift detection actually employs a detector, which signals that a change has occurred and then makes a decision on which adaption technique to use based on the degree of change (\cite{concept-drift-detection-for-streaming-data}).
+
 \section{Word embeddings}
 
 \begin{itemize}
@@ -180,11 +225,13 @@ The main goal of this thesis is to develop a general framework in which machine 
     \item Explain how they work as constants in the framework, and how changing them can affect the downstream models
 \end{itemize}
 
+We have mentioned in section \ref{concept-drift} that there is a set of transformation functions $\mathbb{T}$ that acts as the agent of change on the initial dataset.
+
 \chapter{Framework}
 
 \section{Dataset}
 
-\subsection{The Web of Science}
+\subsection{The Web of Science} \label{wos}
 
 Short introduction to the Web of Science and why it's good to use because of the work done by Zeta Alpha.
 
