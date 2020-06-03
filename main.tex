@@ -1,4 +1,4 @@
-\documentclass[12pt]{report}
+\documentclass[12pt]{extreport}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
 \usepackage[T1]{fontenc}
@@ -7,6 +7,7 @@
 \usepackage{subcaption}
 \usepackage{url}
 \usepackage{amsfonts}
+\usepackage{amsmath}
 \usepackage[a4paper,margin=2cm]{geometry}
 \usepackage[authoryear]{natbib}
 %\usepackage{refcheck}
@@ -219,13 +220,18 @@ Concept drift adaptation is a newer topic of interest in the scientific communit
 
 \section{Word embeddings}
 
+We have mentioned in section \ref{concept-drift} that there is a set of transformation functions $\mathbb{T}$ that act as the agent of change on the initial dataset. The transformation agents that will be the main study of this thesis will be word embeddings, which have been main driving force behind the improvements in natural language understanding in the past decade (\cite{word-embedding-survey}). There were two main reasons that necessitated the development of word embeddings to represent text data:
+
 \begin{itemize}
-    \item Explain word embeddings in general
-    \item Focus on contextualized word embeddings
-    \item Explain how they work as constants in the framework, and how changing them can affect the downstream models
+    \item Solutions before the introduction of word embeddings were based on bag of words, where a word was represented by the number of times it appeared in the text. The bag of words method had the clear disadvantage that it produced huge and sparse vectors, which were unsuitable for models. Word embeddings, on the other hand, produce short and dense vectors, which improves both the computational complexity and the understanding of the text (\cite{word-embedding-survey, word2vec}).
+    \item Another issue with previous approaches was that the context of a word was not embedded into its representation in the vector space. Take for example these two sentences: \emph{I am writing in my notebook} and \emph{I am writing in my journal}. \emph{Notebook} and \emph{journal} have similar context and this should ideally be represented in their respective vectors. Their relationship is represented in theory by the cosine similarity (\cite{word2vec}): \begin{align}\text{similarity}(w_1, w_2) = \cos(\theta) = \frac{w_1 \dot w_2}{\lVert w_1 \rVert \lVert w_2 \rVert}\end{align}, where $\theta$ is the angle between the vectors of $w_1$ and $w_2$. The cosine similarity is no taken into account with the previous approaches, but word embeddings are optimized to improve it.
 \end{itemize}
 
-We have mentioned in section \ref{concept-drift} that there is a set of transformation functions $\mathbb{T}$ that acts as the agent of change on the initial dataset.
+The breakthrough paper that introduced word embeddings to both the academic world and the industry was \texttt{word2vec} (\cite{word2vec}), which computes pre-trained word embeddings using a skip-gram model. Since then, the field has brought increasingly more improvements to non-contextual word embeddings, with some examples being \texttt{GloVe} (\cite{glove}) and \texttt{FastText} (\cite{fasttext}).
+
+Recently, since the introduction of \texttt{BERT} (\cite{bert}) and ELMo (\cite{elmo}), the field has shifted to contextual word embeddings, which have brought with them great improvements to the state of art on a multitude of tasks (\cite{bert}). These embeddings are trained using a bi-directional transformer model by conditioning on both the left and right context of a word, thus creating better representations. Moreover, besides these different fundamental approaches to computing embeddings, each one of these approaches has dozens of pre-trained variations on different datasets or of different sizes (\cite{huggingface}). For example, \texttt{BERT} has seen variations that make it faster and cheaper computationally, like \texttt{DistilBERT} (\cite{distilbert}), or variations that make it work better for scientific text, like \texttt{SciBERT} (\cite{scibert}).
+
+The trend is clear here. Every year, more and more papers come out that upend the state of the art and improve the natural language understanding models. The AI Index Report 2019 (\cite{aiindex2019}) mentions that the number of AI papers produced each year has increased by more than 9x since 1996, with a lot of them in the field of NLP. Thus, companies and AI practitioners have to constantly adapt to the new state of the art, plugging in new word representations to keep their models up to end. This ends up costing compute and development time, since the neural network models have become increasingly more complex from year to year as well (\cite{aiindex2019}). A data pipeline would be better if it could detect that a change in word embeddings has occurred and adapt itself to the new embedding space. Our work will focus on training a classification model using \texttt{BERT} (\cite{bert}), and then adapting the model to other embedding spaces, namely \texttt{SciBERT} (\cite{scibert}) and \texttt{DistilBERT} (\cite{distilbert}).
 
 \chapter{Framework}
 
