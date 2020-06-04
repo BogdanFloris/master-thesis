@@ -167,7 +167,7 @@ The work done in this thesis will mainly focus on supervised online learning, wh
 
 Online data pipelines should in theory operate endlessly after being deployed, but the nature of data in general makes the environment in which they operate dynamic. One example would be the change in the distribution of the data samples that arrive at the pipeline. This phenomenon is known in theory as concept drift (\cite{survey-concept-drift}). Take for example a set of data $X$ with a target variable $y$, where we are trying to learn a function $f$, such that $y = f(X)$. Predictions models usually require and assume stationarity in the data (\cite{Heng_Wang_2015}), so if we make this assumption we can fit $f$ once and assume that it works for all subsequent data coming to the pipeline. In practice, however, it might happen that the distribution of $X$ changes, and so the relationship between $X$ and $y$ also does, which makes our estimate of $f$ outdated.
 
-We can use the framework (\ref{fig:framework}) to formally define the problem addressed in this thesis as a concept drift issue. Let $W$ be the initial, unprocessed dataset (which will be described in \ref{wos}) with labels $\mathbb{C}$ that denote classes, $\mathbb{T}$ a set of transformation functions (for example a function that extracts features out of the initial dataset), and $X$ the transformed input $\forall i: x_i = t(w_i)$, where $t \in \mathbb{T}$. We can then use Bayesian Decision Theory (\cite{pattern-classification}) to state the classification task. The probability $P(c_k), c_k \in \mathbb{C}$ is known as the \emph{a priori} and reflects the probability that a samples belongs to class $c_k$. The probability $P(X|c_k)$ is known as the \emph{class conditional density function} and reflects the probability density of $X$ when class $c_k$ is known. When can use Bayes' Rule to solve for the \emph{posterior}:
+We can use the framework (\ref{fig:framework}) to formally define the problem addressed in this thesis as a concept drift issue. Let $W$ be the initial, unprocessed dataset (which will be described in \ref{wos}) with labels $\mathbb{C}$ that denote classes, $\mathbb{T}$ a set of transformation functions (for example a function that extracts features out of the initial dataset), and $X$ the transformed input $\forall i: x_i = t(w_i)$, where $t \in \mathbb{T}$. We can then use Bayesian Decision Theory (\cite{pattern-classification}) to state the classification task. The probability $P(c_k), c_k \in \mathbb{C}$ is known as the \emph{a priori} and reflects the probability that a samples belongs to class $c_k$. The probability $P(X|c_k)$ is known as the \emph{class conditional density function} and reflects the probability density of $X$ when class $c_k$ is known. When can use Bayes' Rule (\cite{bayesrule}) to solve for the \emph{posterior}:
 
 \begin{equation}
     P(c_k|X) = \frac{P(X|c_k) P(c_k)}{P(X)}
@@ -218,7 +218,7 @@ While there has been ample research involved in detecting anomalies in data whic
 
 Concept drift adaptation is a newer topic of interest in the scientific community, but it is gaining more and more traction as models are becoming increasingly costly to retrain. \cite{hht} mentions that there are two different approaches to address concept drifts in streaming data. Continuing adaptation doesn’t include a concept drift detector, but assumes that the environment will change and either keeps updating the model parameters incrementally (\cite{adwin}), or learns an ensemble of models on different windows in the stream (\cite{incremental-learning-of-concept-drift}). Adaptation with drift detection actually employs a detector, which signals that a change has occurred and then makes a decision on which adaption technique to use based on the degree of change (\cite{concept-drift-detection-for-streaming-data}).
 
-\section{Word embeddings}
+\section{Word embeddings} \label{sec:word-embeddings}
 
 We have mentioned in section \ref{concept-drift} that there is a set of transformation functions $\mathbb{T}$ that act as the agent of change on the initial dataset. The transformation agents that will be the main study of this thesis will be word embeddings, which have been main driving force behind the improvements in natural language understanding in the past decade (\cite{word-embedding-survey}). There were two main reasons that necessitated the development of word embeddings to represent text data:
 
@@ -235,11 +235,30 @@ The trend is clear here. Every year, more and more papers come out that upend th
 
 \chapter{Framework}
 
+In this chapter, we will focus on establishing the framework in which the experiments on detecting and addressing change can be conducted. Namely, we will talk about the dataset that was chosen for these experiments and how this dataset was fed into a prototype of a data pipeline. Moreover, it will also be mentioned what models were chosen and how they were trained.
+
 \section{Dataset}
 
 \subsection{The Web of Science} \label{wos}
 
-Short introduction to the Web of Science and why it's good to use because of the work done by Zeta Alpha.
+Zeta Alpha Vector is a start-up and R\&D lab that aims to build a platform for the scientific community using state of the art natural language understanding which researchers and practitioners can use to find relevant papers and organize their knowledge. Given this goal, our work here involves the processing of a huge number of scientific papers which can then be explored by our users. This is why we have decided that for the purpose of the research done in this thesis, the best dataset to be used is the Web of Science (\cite{wos}).
+
+The Web of Science is a collection of abstracts that were extracted from scientific papers spanning a lot of different fields (\cite{wos}), which make up the labels (e.g. computer science, psychology). The dataset was designed as a hierarchical classification task, in which the purpose is to guess both the broader domain and a subdomain of the paper (e.g. computer graphics is a subdomain of computer science). Since our purpose in this paper is not to solve the task, but to detect and address change, we will simplify the goal to be multiclass classification and only try to guess the subdomain. The dataset is organized into three versions (table \ref{table:wos}), each version having increasingly more samples, but also labels, thus making the task more difficult.
+
+\begin{table}[ht!]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+Version & Samples & Subdomains & Domains \\ \hline
+1       & 5,736   & 11         & 3       \\ \hline
+2       & 11,967  & 35         & 7       \\ \hline
+3       & 46,985  & 134        & 7       \\ \hline
+\end{tabular}
+\caption{Web of Science versions}
+\label{table:wos}
+\end{table}
+
+Again, the purpose of this thesis is not to achieve state of the art on this dataset, so we only need the Web of Science as a framework for our experiments. Thus, we have decided to pick the first version of the dataset to save both time and compute power. This choice should have no impact on the overall results of paper, since training on either of the other two versions would just give us a baseline model with different performance compared to the first version.
 
 \begin{figure}[ht!]
 \centering
@@ -248,21 +267,46 @@ Short introduction to the Web of Science and why it's good to use because of the
 \label{fig:wos-1}
 \end{figure}
 
-Potentially add the two other variants of the Web of Science, but experiments need to be performed with those versions of the Web of Science too. That might not be worth it because analyzing the performance of the LSTM on the Web of Science is not the purpose of this thesis.
+We also visualize the distribution of labels in the first version of the Web of Science to check that all classes are represented properlly. \cite{classimbalance} mentions that class imbalance happens when one class outnumbers the others 10 to 1, but we can see from figure \ref{fig:wos-1} that we do not have this problem, and so we can use the usual classification methods and metrics.
 
-\subsection{Data stream}
+\subsection{Data pipeline}
 
-Explain how the Web of Science was transformed into a data stream (batch sizes, adjustments, parameters, etc.).
+Having chosen an appropriate dataset for our experiments, we now shift our focus to describing the data pipeline that will receive at its point of entry samples from dataset. This pipeline will mostly follow the diagram shown in figure \ref{fig:framework}.
 
-\section{Models}
+The first requirement is to pick a suitable framework in which to design the pipeline. While frameworks like \texttt{Kafka} (\cite{kafka}) or \texttt{Flink} (\cite{flink}) are excellent for an industry setting for high performance and scalability are required, they are overkill for the prototype pipeline we are designing. Thus, we have chosen to use \texttt{Scikit-Multiflow} (\cite{skmultiflow}), a data streaming library that builds on top of \texttt{Scikit-Learn} (\cite{sklearn}) and aims to provide the same algorithms as its parent library but adjusted to online learning. The library is a good choice since it allows us to keep the same challenges that come with machine learning in data pipelines in order to make our experiments more robust, but also speed up the implementation time since its API is compatible with \texttt{Scikit-Learn}, the most used machine learning library.
 
-\subsection{Naive Bayes baseline}
+The first step in the pipeline is to pre-process the data, since text tends to contain information that is irelevant to classification (e.g. tags, spaces, punctuation, miss-spellings) (\cite{textclassification}). After cleaning the data, we can then feed it to one of the three chosen transformer (\cite{huggingface}) models (see section \ref{sec:word-embeddings}) and their corresponding tokenizers to extract the word embeddings. To keep everything consistent throughout all experiments, we have chosen to keep the embedding dimension to 768, to cut of all sequences of tokens to 512 if they are longer, to pad everything with zeros if the sequences of tokens are shorter than 512, and to keep the last layer of the transformer models (\cite{attention}) as the inputs to the models. This results in a final dataset that is held in a three-dimensional tensor of shape $(N, 512, 768)$, where $N$ is the number of samples.
 
-\begin{itemize}
-    \item Short introduction to the Naive Bayes model in general.
-    \item Explain how the Naive Bayes model was adapted for our use case (things like picking the maximum over the sequence length axis in order to get a useable dataset for the model).
-    \item Analyze the performance of the model and explain how the model is not robust enough.
-\end{itemize}
+The next step of the pipeline is to input these samples to the model (section \ref{sec:models}) to get a predictions that will then be used together with the labels to compute metrics which will be fed to the change detector (chapter \ref{sec:detecting}). The detector can then make a decision on whether or not a change has occurred and alert the system that the change must be addressed (chapter \ref{sec:addressing}).
+
+\section{Models} \label{sec:models}
+
+This section covers the next step in our data pipeline, the models. Two models have been chosen for our experiments: Naive Bayes, which acts as a baseline, and an LSTM that will be the main object of our experiments. The comparison between the two models will be developed in this section and in the subsequent chapters and will serve to highlight how a probabilistic model and a neural network model behave under change. The next two subsections will present a more in depth look at the models (explanation on the methods, training process, etc.), but the important results averaged over 5 runs are shown in table \ref{table:model-metrics}.
+
+\begin{table}[ht!]
+\centering
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+            & Loss & Train Accuracy & Test Accuracy & Precision & Recall & Macro F1 \\ \hline
+Naive Bayes & N/A        & 0.612          & 0.554         & 0.575          & 0.571       & 0.567         \\ \hline
+LSTM        & 0.087      & 0.955          & 0.898         & 0.894          & 0.895       & 0.892         \\ \hline
+\end{tabular}
+\caption{Metrics for the Naive Bayes and LSTM models averages over 5 runs (the first 2 columns are on the train set, while the rest are on the test set).}
+\label{table:model-metrics}
+\end{table}
+
+\subsection{Naive Bayes} \label{sec:nb}
+
+The Naive Bayes classifier is a supervised machine learning algorithm that is quite popular in natural language processing (\cite{naivebayes}) and is usually used as a baseline for other methods in text classification (\cite{nb-baseline}). The algorithm is based on Bayes' Rule (\cite{bayesrule}) and the following equation is used to classify a sample:
+
+\begin{equation}
+    P(y|x_1, ..., x_k) = \frac{P(x_1, ..., x_k|y)P(y)}{P(x_1, ..., x_k)}
+\end{equation}
+, where $x_{1..k}$ are features of a sample and $y$ the label. Since the marginal probability remains equal throughout the computations, we can exclude it. Moreover, the Naive Bayes makes an important assumption that the features of a data point are conditionally independent given the label. Even though this assumption is not corrent more often than not, it turns out that Naive Bayes usually works in practice on simpler classification tasks (\cite{naivebayes}). In fact, a good predictor for the performance of the classifier is the amount of information lost due to the independence assumption, as the experiments in \cite{naivebayes} show.
+
+For our experiments, we use the implementation of Naive Bayes from the \texttt{Scikit-Learn} package, which also supports a \texttt{partial\_fit} method, suitable for online learning, thus making the implementation compatible with our data pipeline. We have mentioned in section \ref{sec:models} that a sample representation in our dataset is a 2D matrix with shape $(512, 768)$, but Naive Bayes only supports samples that are in one dimension. This leaves us with two options: we can either aggregate (taking the average or the maximum) over one of the dimensions, or just flatten matrix. We have found by trying all these methods that flattening the matrix is both more expensive and produces worse results than aggregating. The best performing method was taking the maximum over the first dimension, thus producing a sample of size $768$ that contains all the information of a scientific paper abstract.
+
+These samples were then fed to the data pipeline in batches of $32$ for $10$ epochs in order to train the Naive Bayes classifier, while keeping track of the training set accuracy. At the end of each epoch, we also computed four different metrics (accuracy, precision, recall, and macro F1) on a holdout testing set to make sure that the model was not influenced by a class imbalance problem. The results are shown in table \ref{table:model-metrics} and in figures \ref{fig:nb-acc} and \ref{fig:nb-metrics}.
 
 \begin{figure}[ht!]
 \centering
@@ -271,7 +315,7 @@ Explain how the Web of Science was transformed into a data stream (batch sizes, 
 \label{fig:nb-acc}
 \end{figure}
 
-Also show that the other metrics are performing on par with the accuracy for the test set using the following picture \ref{fig:nb-metrics}.
+As we can see for the results, the Naive Bayes method performs decently enough for a multiclass classification problem with 11 classes (the $0.55$ test set accuracy is substantially better than the accuracy of $0.09$ accuracy of a random guesser algorithm). Moreover, we can see from figure \ref{fig:nb-metrics} that class imbalance is not a issue here since all the metrics that we have chosen have almost identical curves. Furthermore, the model converges almost quite fast and the curve shows not oscillations on the test set (figure \ref{fig:nb-acc}), so we can conclude that it is pretty robust on the dataset that it was trained on. However, as we will see in the next chapter (\ref{sec:detecting}), as soon as the features deviate just a little bit, the model performs much worse, so it is not robust to changes in data distribution.
 
 \begin{figure}[H]
 \centering
@@ -280,14 +324,19 @@ Also show that the other metrics are performing on par with the accuracy for the
 \label{fig:nb-metrics}
 \end{figure}
 
-\subsection{LSTM}
+\subsection{LSTM} \label{sec:lstm}
+
+Long Short Term Memory (LSTM) (\cite{lstm}) network is a type of ANN that has been created to address a major problem with Recurrent Neural Networks (RNNs), that of the vanishing gradient. RNNs were designed to model continuity, meaning that the network could learn from past events. This is especially useful in the context of NLP, where we would like to model problems based on sequences of words. The vanishing gradient problem occurs when there are long-distance relationships between the elements of the sequence. By continuously derivating, the gradient will eventually be 0 and thus we cannot perform a meaningful update. LSTMs are designed specifically to solve this problem, by making small modifications to the information by multiplications and additions through a mechanism called a cell state that allows for information to easily flow through the network (\cite{lstmrnnfundamentals}). Cells make use of three gates that determine what information gets passed along to the next cell (\cite{colahlstm}):
 
 \begin{itemize}
-    \item Short introduction to LSTM models in general.
-    \item Again, explanation of design choices made (how we solved the different sized sequences problem, and how we solved feeding it into a final fully connected layer for classification).
-    \item Analyze the performance of the model and explain how the model is robust.
-    \item Differences between the LSTM model and Naive Bayes one.
+    \item Input gate, which decides how the input will affect the cell state
+    \item Forget gate, which decides what information from the previous cell state is kept and what is forgotten
+    \item Output gate, which determines the output hidden state that gets sent to the next cell
 \end{itemize}
+
+All these properties make LSTMs a very suitable choice as our model with which we can solve the text classification task. Neural network models are already online learning methods by their contruction since they are using gradient descent on batches of an arbitrary number of samples. Thus, we can simply incorporate an LSTM into our data pipeline. The architecture will be kept simple since the task is not overly complex and we would like to save computation time. The network has two LSTM layers with a hidden dimension of $256$ and a final fully connected layer that is used for classification. Unlike the Naive Bayes model, we had no issues feeding the 2D samples to the LSTM layers since the model is specifically designed to handle sequences. However, we encountered a similar issue before feeding the output of the LSTM layers to the fully connected layer for classification. \cite{maxpoolinglstm} mentions that absolute value max pooling over the hidden dimension of the LSTM output will transform the vector to one dimension while preserving the most important information.
+
+As we have done with the Naive Bayes model, we fed the samples to the data pipeline with an LSTM model in batches of $32$ for $10$ epochs, while keeping track of the train set loss and accuracy. We again computed the four metrics mentioned in the previous subsection at the end of each epoch on the test holdout test. The results are shown in table \ref{table:model-metrics} and figures \ref{fig:lstm-loss-acc} and \ref{fig:lstm-metrics}.
 
 \begin{figure}[H]
 \centering
@@ -307,7 +356,7 @@ Also show that the other metrics are performing on par with the accuracy for the
 \label{fig:lstm-loss-acc}
 \end{figure}
 
-Also show that the other metrics are performing on par with the accuracy for the test set using the following picture \ref{fig:lstm-metrics}.
+As assumed, the results show us that the LSTM is a much better model for text classification since it does not assume independence between the features, but actually tries to learn that dependence. We obtain a test set accuracy of 0.898 averaged over 5 runs and while the model doesn't converge quite as fast as the Naive Bayes, it still manages to arrive at a good performance quite quickly, as can be seen from figure \ref{fig:lstm-loss-acc}. We also obtain the same results about the class imbalance problem as the Naive Bayes, with all four metric curves looking almost identical. The LSTM is not only very robust on the dataset that it was trained on, but as we will show in chapter \ref{sec:addressing}, it can also handle perturbations in its input distribution, with its performance declining much slower than the Naive Bayes model.
 
 \begin{figure}[H]
 \centering
@@ -316,7 +365,7 @@ Also show that the other metrics are performing on par with the accuracy for the
 \label{fig:lstm-metrics}
 \end{figure}
 
-\chapter{Detecting change}
+\chapter{Detecting change} \label{sec:detecting}
 
 \section{Experimental Setup}
 
@@ -476,7 +525,7 @@ Main topics for discussion:
     \item How gradual noise affects the models
 \end{itemize}
 
-\chapter{Addressing change}
+\chapter{Addressing change} \label{sec:addressing}
 
 Two methods of addressing change:
 \begin{itemize}
@@ -576,6 +625,7 @@ Discuss the results.
 \chapter{Conclusion and Future Work}
 
 \addcontentsline{toc}{chapter}{Bibliography}
+\setcitestyle{numbers}
 \bibliographystyle{plainnat}
 \bibliography{references.bib}
 
