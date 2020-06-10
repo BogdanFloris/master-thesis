@@ -69,7 +69,7 @@ November 2019 - July 2020\\[1cm]%
 \begin{flushleft} \large
 \emph{Supervisors:} \\
 prof. dr. Paul \textsc{Groth}\\
-dr. Jakub \textsc{Zavrel}
+Jakub \textsc{Zavrel}
 \end{flushleft}
 \end{minipage}
 \begin{minipage}[t]{0.4\textwidth}
@@ -107,7 +107,7 @@ Insert the acknowledgements here.
 
 \listoftables
 
-\chapter{Introduction}
+\chapter{Introduction} \label{sec:intro}
 
 \begin{itemize}
     \item General introduction to the field (Machine Learning, NLP)
@@ -167,13 +167,13 @@ The work done in this thesis will mainly focus on supervised online learning, wh
 
 Online data pipelines should in theory operate endlessly after being deployed, but the nature of data in general makes the environment in which they operate dynamic. One example would be the change in the distribution of the data samples that arrive at the pipeline. This phenomenon is known in theory as concept drift (\cite{survey-concept-drift}). Take for example a set of data $X$ with a target variable $y$, where we are trying to learn a function $f$, such that $y = f(X)$. Predictions models usually require and assume stationarity in the data (\cite{Heng_Wang_2015}), so if we make this assumption we can fit $f$ once and assume that it works for all subsequent data coming to the pipeline. In practice, however, it might happen that the distribution of $X$ changes, and so the relationship between $X$ and $y$ also does, which makes our estimate of $f$ outdated.
 
-We can use the framework (\ref{fig:framework}) to formally define the problem addressed in this thesis as a concept drift issue. Let $W$ be the initial, unprocessed dataset (which will be described in \ref{wos}) with labels $\mathbb{C}$ that denote classes, $\mathbb{T}$ a set of transformation functions (for example a function that extracts features out of the initial dataset), and $X$ the transformed input $\forall i: x_i = t(w_i)$, where $t \in \mathbb{T}$. We can then use Bayesian Decision Theory (\cite{pattern-classification}) to state the classification task. The probability $P(c_k), c_k \in \mathbb{C}$ is known as the \emph{a priori} and reflects the probability that a samples belongs to class $c_k$. The probability $P(X|c_k)$ is known as the \emph{class conditional density function} and reflects the probability density of $X$ when class $c_k$ is known. When can use Bayes' Rule (\cite{bayesrule}) to solve for the \emph{posterior}:
+We can use the framework (\ref{fig:framework}) to formally define the problem addressed in this thesis as a concept drift issue. Let $W$ be the initial, unprocessed dataset (which will be described in \ref{wos}) with labels $\mathbb{C}$ that denote classes, $\mathbb{T}$ a set of transformation functions (for example a function that extracts features out of the initial dataset), and $X$ the transformed input $\forall i: x_i = t(w_i)$, where $t \in \mathbb{T}$. We can then use Bayesian Decision Theory (\cite{pattern-classification}) to state the classification task. The probability $P(c_k), c_k \in \mathbb{C}$ is known as the \emph{a priori} and reflects the probability that a sample belongs to class $c_k$. The probability $P(X|c_k)$ is known as the \emph{class conditional density function} and reflects the probability density of $X$ when class $c_k$ is known. When can use Bayes' Rule (\cite{bayesrule}) to solve for the \emph{posterior}:
 
 \begin{equation}
     P(c_k|X) = \frac{P(X|c_k) P(c_k)}{P(X)}
 \end{equation}
 
-Concept drift occurs if for two time points $t_1$, $t_2$, where $t_2 > t_1$, $\exists x \in X: P_{t_1}(x|c_k) \neq P_{t_2}(x|c_k)$. For our purposes, we will assume that $W$ remains stationary and the distribution shift happens because of a change in the transformation functions $\mathbb{T}$, induced by the pipeline switching from transformation function to another.
+Concept drift occurs if for two time points $t_1$, $t_2$, where $t_2 > t_1$, $\exists x \in X: P_{t_1}(x|c_k) \neq P_{t_2}(x|c_k)$. For our purposes, we will assume that $W$ remains stationary and the distribution shift happens because of a change in the transformation functions $\mathbb{T}$, induced by the pipeline switching from a transformation function to another.
 
 \subsection{Concept drift types}
 
@@ -206,9 +206,9 @@ Concept drift is the shift in the distribution of the dataset as samples come to
 \label{fig:gradual-drift}
 \end{figure}
 
-As mentioned earlier, the type of concept drift encountered has an impact of both detecting and addressing change. As emphasized in the next section, there are quite a few algorithms that are used in practice to detect concept drift, and most of them are better at detecting a specfici type of drift, so there is no free lunch. As shown in the experiments in the next chapter, gradual drift is harder to detect and it's quite easy to trigger a false positive. When in comes to addressing change, there are again a few options from which to choose. For example, a fine tuning approach might work for a small abrupt drift, but doing it for a big abrupt drift is akin to retraining the model from scratch, something we would like to avoid.
+As mentioned earlier, the type of concept drift encountered has an impact of both detecting and addressing change. As emphasized in the next section, there are quite a few algorithms that are used in practice to detect concept drift, and most of them are better at detecting a specific type of drift, so there is no free lunch. As shown in the experiments in the next chapter, gradual drift is harder to detect and it's quite easy to trigger a false positive. When in comes to addressing change, there are again a few options from which to choose. For example, a fine tuning approach might work for a small abrupt drift, but doing it for a big abrupt drift is akin to retraining the model from scratch, something we would like to avoid.
 
-\subsection{Concept drift detection algorithms}
+\subsection{Concept drift detection algorithms} \label{sec:cda}
 
 While there has been ample research involved in detecting anomalies in data which is at rest (\cite{survey-outlier-detection} provides a nice overview of the methodologies employed in anomaly detection and \cite{there-and-back-again} comes with a data mining perspective on outlier detection), machine learning pipelines are anything but static. Data is continuously pushed through the system, so the metrics computed from the models’ outputs are adjusted endlessly. Moreover, this uninterrupted flow in the system makes storing all these metrics infeasible, so the pipeline must be able to make a decision on whether or not a concept drift occurred based only on the most recent samples.
 
@@ -367,26 +367,34 @@ As assumed, the results show us that the LSTM is a much better model for text cl
 
 \chapter{Detecting change} \label{sec:detecting}
 
+Now that we have explained the framework in which the experiments in this thesis will be conduced, we can proceed to answer the first research question outlined in chapter \ref{sec:intro}: \textbf{How can we quickly detect that the output distribution of a model has changed given a continuous stream of data, and then report on the degree of change?}.
+
+This chapter, and every subsequent chapter after this, will be organized as follows. We will first explain how the experiments were setup and present every important detail in order to better understand the result, which will be shown after. Finally, we will interpret the results in a discussion.
+
 \section{Experimental Setup}
 
+We have outlined a few approaches to drift detection in section \ref{sec:cda}, but there are too many algorithms to try all of them in practice, so we have decided to stick with a few that have proven themselves throughout literature. \cite{mcdiarmid} mention that DDM, EDDM, and ADWIN have been frequently considered as benchmarks, while Page-Hinkley (\cite{pagehinkley}) was a pioneer method in the field. Coincidentally, \texttt{Scikit-Multiflow}, the library on which our pipeline was built, has implementations for all of these algorithms, so we have experimented with all four before deciding on a suitable change detector. As expected, Page-Hinkley did not perform on par with the other three since it's an older method. Both DDM and EDDM are statistical analysis methods which attemp to detect drift based on statistical parameters such as the mean and standard deviation, so in theory they sacrifice detection accuracy for minimal storage and speed. ADWIN, however, is a window based method which needs to store two windows of the data stream, one older and another newer. If there is a significant difference between these two windows, than ADWIN signals a drift. This method is supposed to be more accurate, but it also needs to store two windows of data and compute a difference metric on those two windows, which makes it more computationally expensive. In practice, however, we have found that DDM and ADWIN perform on par on abrupt drift, while EDDM outshines the rest on gradual drift, which makes sense since it was specifically designed for this. Thus, we have decided to use DDM for the abrupt drift experiments, and EDDM for the gradual drift ones.
+
+The experiments will be run as follows: given the models trained in the previous chapter on BERT embeddings, we first push our whole dataset through the pipeline, again transformed using BERT, and evaluate the predictions made by the model against the labels, producing an accuracy. This accuracy will then be inputted to the change detector for each batch that runs through the pipeline. Thus, the change detector can build an accurate mean and standard deviation for the dataset. After the whole dataset is finished, we are now ready to introduce change in the pipeline, by re-running the dataset from the beginning, but now transformed using either one of SciBERT or DistilBERT, or by adding random noise to the BERT embeddings. Again, the predictions will be evaluated against the labels, and the accuracies pushed to the change detector. Note that the detector can signal a warning, meaning that the pipeline is close to deviating from the mean, or an actual drift. The detector will be queried for either a warning or a drift after each batch, both when running the stream the first time (to test that the detector is robust and doesn't signal false positives) and the second time (to detect changes).
+
+The three agents of change were picked for the following reasons:
 \begin{itemize}
-    \item Explain the different types of change detectors and their pros and cons.
-    \item Explain how the experiments will be conducted: running a first stream using the embeddings that the model was trained while feeding the metrics to the change detector, then running another stream transformed using other embeddings and seeing how the model and the change detector react.
-    \item We can change embeddings to produce a very small abrupt drift and change embeddings to produce a big abrupt drift.
-    \item Testing for gradual drift will be done by adding random noise to the embeddings over time.
-    \item Experiments will be run for both the Naive Bayes model and the LSTM model.
-    \item We also need to differentiate between supervised computation of the metrics and unsupervised computation of the metrics.
-    \item Mention how the sensitivity of the change detector needs to be adjusted for the unsupervised case.
-    \item Mention that we show that the accuracy is 1 for the unsupervised trained model, but in practice we introduce randoms betwwen 0.9 and 1.
+    \item SciBERT (\cite{scibert}) provides a completely different representation for the documents, since it was training on scientific text. Thus, there should be no correlation between these embeddings and BERT, and so we can introduce SciBERT as an agent of big abrupt drift, a type of change that should be felt instantly by the pipeline and will result in huge degradation to the accuracy of the model.
+    \item DistilBERT (\cite{distilbert}), on the other hand, was trained to be a faster and smallert version BERT, while retaining most of its language understanding capabilities. This should mean that models trained on BERT should perform on par when new samples arrive that have been transformed using DistilBERT. We can then introduce this embeddings as an agent of small abrupt drift, which should also be felt instantly by the pipeline, but will result in minimal or no degradation in the performance.
+    \item The last agent that we need to introduce needs to be able to simulate a gradual drift. For these experiments, we have to adjust our experiments framework a bit by only running the stream once, but from a specific batch, we start to add random gaussian noise in an increasing fashion as described: we keep the mean of the normal distribution to 0, and we pick a maximum standard deviation. Then, we make an evenly spaced interval of standard deviations between zero and the maximum. We then sample the random noise from the distribution, we thus every batch gets increasingly more noise added to it. Note that we will be running experiments with three maximum standard deviations: $1.0$, $2.0$, and $3.0$.
 \end{itemize}
+
+The last point that we need to mention before getting on with showing the actual results is that we previously made an assumption about how we compute the metrics that are being inputted to the change detector. In real world data pipelines, this is however not usually a valid assumption to make since the incoming data to the pipeline is not labelled most of time. This means that we also need to find a way in which to detect change when we have a model, but the data arriving at it does not have labels. One way to do this is to assume that the model in the current pipeline produces perfect predictions and use them as labels to produce metrics against the pipeline with a newly introduced agent of change. As an example, which we will see in the results section, we assume that the BERT embeddings produce perfect predictions (with accuracies of $1.0$), and use those labels to compute metrics with the $SciBERT$ predictions. In practice, however, we have found that only inputting accuracies of $1.0$ to the change detector when running the BERT stream, made the detector too sensitive to any value that wasn't $1.0$. Thus we have decided to actually input random uniform numbers between $0.9$ and $1.0$ to the change detector and also tune its sensitivity down by increasing the threshold when the detector signals a warning or a change.
+
+\newpage
 
 \section{Results}
 
-This section will show the results for the change detection chapter without discussing the results.
+Now that we have established how the experiments will be run, we can go on to present the results for both models. We will start of with Naive Bayes and then move on to the LSTM. Both of them will have the supervised and unsupervised results shown side by side for better clarity, and the figures will have a consistent format: the blue stream will be the one on which the model was trained (i.e. BERT embeddings), while the green stream will be the stream impacted by change (i.e. SciBERT or DistilBERT). Moreover, warnings outputted by the change detector are visualized by a yellow cross, and the drift by a red cross. Note that for the random noise change detection experiments, there is only one stream, the blue one, which is slowly being impacted by change.
 
 \subsection{Naive Bayes model}
 
-First show the results of changing embeddings. First BERT-DISTILBERT trying to provoke just a small abrupt drift, and then BERT-SCIBERT to provoke a big abrupt drift. We will show the supervised and the unsupervised side by side. Also explain the figures.
+We first change embeddings from BERT to DistilBERT (i.e. simulating small abrupt drift) for both the supervised and unsupervised case and showcase the results in figures \ref{fig:nb-diff-embed-super-B-D} and \ref{fig:nb-diff-embed-unsuper-B-D}. DistilBERT embeddings are supposed to preserve the embeddings space of BERT, but it seems that the Naive Bayes model is fitted very closely to the dataset that it was trained on, and it is not robust to small changes in its inputs. Except for a few outliers, we can see that the performance of the model drops by a lot instantly. The change detector however did its job quite well and outputted a few warnings very fast before finally triggering a drift. Moreover, we can see that the places where the outliers are can be found in both the supervised and the unsupervised variants and thus it seems that our method for computing metrics is working so far. Note however that the change is triggered much faster than in the supervised case, mostly because the supervised case has an average accuracy of about $0.6$, while in the unsupervised case we are inputting to the change detector random numbers between $0.9$ and $1.0$, thus it seems that our proposed method works best when the performance of the model is very good on the dataset on which it was trained on.
 
 \begin{figure}[H]
 \centering
@@ -406,6 +414,8 @@ First show the results of changing embeddings. First BERT-DISTILBERT trying to p
 \label{fig:nb-diff-embed-B-D}
 \end{figure}
 
+Figures \ref{fig:nb-diff-embed-super-B-S} and \ref{fig:nb-diff-embed-unsuper-B-S} present the results for the experiments when we are changing from BERT to SciBERT (i.e. simulating big abrupt drift). Given that the previous figures also showed a big change, it is not surprising that these results showcase the same phenomenon. Again, performance degrades instantly, but in this case, we don't even have the outliers in the green stream. This is expected, however, since SciBERT is a completely different embedding from BERT and so the performance should degrade. The change detector also outputs the change quite fast, more so in the unsupervised case, for the reasons explained previously.
+
 \begin{figure}[H]
 \centering
 \begin{subfigure}{.5\textwidth}
@@ -424,7 +434,7 @@ First show the results of changing embeddings. First BERT-DISTILBERT trying to p
 \label{fig:nb-diff-embed-B-S}
 \end{figure}
 
-Next, we show the results of adding gradual noise to the Naive Bayes model.
+Now we can move on the the third agent of change, that is adding random gaussian noise to the BERT embeddings to simulate gradual drift. As explained in the previous subsection, after a few dozen batches, we start adding this noise in increasing fashion by sampling from a normal distribution with mean zero and a standard deviation between 0 and a predetermined maximum. We run this experiments for three maximum standard deviations: $1.0$ (figure \ref{fig:nb-gradual-std-1}), $2.0$ (figure \ref{fig:nb-gradual-std-2}), and $3.0$ (figure \ref{fig:nb-gradual-std-3}). Again, we start to notice the same pattern for the Naive Bayes model, that even slightly small changes to the input distribution results in significant drops in its performance. For the maximum standard deviations of $2.0$ and $3.0$, the drop to the performance of a random guesser is almost instant, with the change detector reacting accordingly. For the standard deviation $1.0$, it takes a few batches for the performance to drop, with the change detector being a little slower as was expected.
 
 \begin{figure}[H]
 \centering
@@ -452,7 +462,7 @@ Next, we show the results of adding gradual noise to the Naive Bayes model.
 
 \subsection{LSTM model}
 
-Same things for the LSTM model.
+Now that we have shown how the Naive Bayes model behaves under change, we can move on to a more interesting neural network based model which is supposed to provide a much better approximation for the input distribution (i.e. the BERT embeddings space), the LSTM. The results are presented in the same order as in the previous subsection, starting with changing embeddings from BERT to DistilBERT in order to simulate small abrupt drift when we assume labels and when the assumption is not made. These results are shown in figures \ref{fig:lstm-diff-embed-super-B-D} and \ref{fig:lstm-diff-embed-unsuper-B-D} and they confirm our expectations that the LSTM model should behave almost the same when changing from BERT to DistilBERT since they were purposefully designed to be interchangeable. We see from figure \ref{fig:lstm-diff-embed-super-B-D} that the performance only drops slightly when switching streams, since there is only an approximately $0.5$ drop in accuracy on average on the green stream compared to the blue one. Moreover, the change detector correctly stays in the warning zone for a few dozen batches to see if the performance recovers before finally signalling a drift when about half the stream has been run. When labels are not available (figure \ref{fig:lstm-diff-embed-unsuper-B-D}), we see that the green curves in both figures look quite similar so the solution that we have come up with in which we replace the labels with the predictions of the first stream seems to be working quite well. However, since the random accuracies (between $0.9$ and $1.0$) that were fed to the change detector in the unsupervised case are a bit lower on average than the accuracies produced when we do have labels, the detector doesn't consider that the deviation is high enough to signal a drift, so it stays in the warning zone until the end of the stream. This could have been fixed by adjusting the sensitivity of the change detector, but for the purpose of the experiments, we have kept all parameters the same between the experiments. These results show that the DDM detector is robust enough to also detect change that is quite small, and even if it doesn't, it stays in a perpetual warning zone that can help identify drifts nonetheless. One improvement that we could bring to DDM is to also introduce a parameter that controls the length of the warning zone (i.e. if we are in a warning zone for a fixed duration, we signal an actual drift).
 
 \begin{figure}[H]
 \centering
@@ -472,6 +482,8 @@ Same things for the LSTM model.
 \label{fig:lstm-diff-embed-B-D}
 \end{figure}
 
+Moving on to simulating big abrupt drift using a switch from BERT embeddings to DistilBERT, the results are showcased in figures \ref{fig:lstm-diff-embed-super-B-S} and \ref{fig:lstm-diff-embed-unsuper-B-S}. These results were again as expected, with a huge downgrade in the performance of the LSTM happening instantly since the SciBERT embedding space is very different from the BERT space. The change detector signals a drift immediately as well, outputting only two warnings in the supervised variant, and three in the unsupervised one. These is even faster than the results in the Naive Bayes model and this makes sense since the drop in performance is from almost perfect to random. The unsupervised case also performs exactly on par with the supervised, further proving that the method for detecting change when we have no labels works.
+
 \begin{figure}[H]
 \centering
 \begin{subfigure}{.5\textwidth}
@@ -490,7 +502,7 @@ Same things for the LSTM model.
 \label{fig:lstm-diff-embed-B-S}
 \end{figure}
 
-Now gradual change for the LSTM model.
+Finally, figures \ref{fig:lstm-gradual-std-1}, \ref{fig:lstm-gradual-std-1}, and \ref{fig:lstm-gradual-std-1} present the results for adding gradual noise samples from a gaussian distribution with maximum standard deviations of $1.0$, $2.0$, and $3.0$ respectively to the BERT embeddings to simulate a gradual drift. These results again prove that the LSTM model is much more robust then the Naive Bayes one, because even when small random noise are added to the inputs that the model uses, it still retains its performance. This can be clearly seen in the figures, where for a maximum standard deviation of $1.0$, the model doesn't even have a performance drop for the whole duration of the stream, for a deviation of $2.0$, it only enters the warning zone towards the end of the stream with a drift being signalled right at the end, and for a deviation of $3.0$, the drift is detected after the middle of the stream.
 
 \begin{figure}[H]
 \centering
@@ -518,11 +530,10 @@ Now gradual change for the LSTM model.
 
 \section{Discussion}
 
-Main topics for discussion:
+The results that were presented in the previous section showcase two important points:
 \begin{itemize}
-    \item Difference in robustness between the LSTM model and the Naive Bayes model.
-    \item Difference between supervised and unsupervised and how picking settings for the change detector and how we input values for accuracy to it (0.9-1) is very important and produces different results.
-    \item How gradual noise affects the models
+    \item There is a clear difference in robustness between the two models that we have chosen. The Naive Bayes model \emph{overfits} heavily on the dataset on which it was trained on, and thus any small perturbation in its input leads to a heavy degradation in the performance of the model. This can clearly be seen from the change to the DistilBERT embeddings, which are trained to be almost equivalent to the BERT ones, where the model performed much worse than expected. The LSTM, however, did not have these issues, only showing the expected slight degradation in its performance when switching to the DistilBERT embeddings.
+    \item The second takeaway is that the change detectors work quite well for all the models and even when we don't have labels with which to compute the accuracies. The results in this chapter can be improved, however, if the user of the pipeline knows beforehand what type of change he expects. If gradual drift is expected, EDDM is the preferred method since it signals change faster than the normal DDM. For abrupt drift, DDM works very well in the supervised, while for the unsupervised case, it should be a little faster. If no labels are available, the sensitivity of the detector should be increased by decreasing the threshold for which a warning or a drift should be outputted.
 \end{itemize}
 
 \chapter{Addressing change} \label{sec:addressing}
@@ -617,6 +628,28 @@ Show the results.
 \caption{Embeddings spaces visualized using t-SNE for the Procrustes method}
 \label{fig:proc-tsne}
 \end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.8\linewidth]{assets/addressing-change/mlp_mapping_lstm_wos_1_BERT_SCIBERT_10000_words_average.png}
+\caption{Mapping using MLP network results using \textbf{average} embeddings aggregation in dataset}
+\label{fig:mlp-average}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.8\linewidth]{assets/addressing-change/mlp_mapping_vis_pca_SCIBERT_BERT_average.png}
+\caption{Embeddings spaces visualized using PCA for the MLP method}
+\label{fig:mlp-pca}
+\end{figure}
+
+\begin{figure}[ht!]
+\centering
+\includegraphics[width=0.8\linewidth]{assets/addressing-change/mlp_mapping_vis_tsne_SCIBERT_BERT_average.png}
+\caption{Embeddings spaces visualized using t-SNE for the MLP method}
+\label{fig:mlp-tsne}
+\end{figure}
+
 
 \subsection{Discussion}
 
