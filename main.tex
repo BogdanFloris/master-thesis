@@ -20,6 +20,8 @@
     urlcolor=black
 }
 
+\DeclareMathOperator*{\argmin}{arg\,min}
+
 \begin{document}
 
 \begin{titlepage}
@@ -131,8 +133,8 @@ The main goal of this thesis is to develop a general framework in which machine 
 
 \paragraph*{Given that a change was detected, how can we adapt the model efficiently such that the performance is the same as it previously was before the change?} Insert overall description of the question here, them break it down to the two other questions:
 \begin{itemize}
-    \item \textbf{Given a small change (gradual drift or small abrupt drift), can we adapt the model by feeding it with a few examples, compared to retraining it from scratch?} Description about this subquestion.
-    \item \textbf{Given a big change (big abrupt drift), can we adapt the model by finding a mapping between the old outputs and the new ones which is less expensive to compute than retraining the model from scratch?} Description about this subquestion
+    \item \emph{Given a small change (gradual drift or small abrupt drift), can we adapt the model by feeding it with a few examples, compared to retraining it from scratch?} Description about this subquestion.
+    \item \emph{Given a big change (big abrupt drift), can we adapt the model by finding a mapping between the old outputs and the new ones which is less expensive to compute than retraining the model from scratch?} Description about this subquestion
 \end{itemize}
 
 \chapter{Background}
@@ -162,6 +164,8 @@ Online learning is the type of data analysis usually deployed in streaming data 
 The work done in this thesis will mainly focus on supervised online learning, while briefly touching on how a lack of supervision could be handled.
 
 \section{Concept drift} \label{concept-drift}
+
+This section will present a brief introduction to the concept drift phenomenon in machine learning, mention how concept drift can act on data and on the models which were trained on the data, and present some work that has been done into concept drift detection algorithms.
 
 \subsection{Definition}
 
@@ -233,11 +237,17 @@ Recently, since the introduction of \texttt{BERT} (\cite{bert}) and ELMo (\cite{
 
 The trend is clear here. Every year, more and more papers come out that upend the state of the art and improve the natural language understanding models. The AI Index Report 2019 (\cite{aiindex2019}) mentions that the number of AI papers produced each year has increased by more than 9x since 1996, with a lot of them in the field of NLP. Thus, companies and AI practitioners have to constantly adapt to the new state of the art, plugging in new word representations to keep their models up to end. This ends up costing compute and development time, since the neural network models have become increasingly more complex from year to year as well (\cite{aiindex2019}). A data pipeline would be better if it could detect that a change in word embeddings has occurred and adapt itself to the new embedding space. Our work will focus on training a classification model using \texttt{BERT} (\cite{bert}), and then adapting the model to other embedding spaces, namely \texttt{SciBERT} (\cite{scibert}) and \texttt{DistilBERT} (\cite{distilbert}).
 
+\section{Conclusion}
+
+In conclusion, this chapter gives a brief introduction into the key concepts on which the work done in this thesis builds upon. The research will be done not in the traditional machine learning framework, that of offline learning, but in a more applicable situation of online learning, using a streaming data pipeline. To agent of change that will act on the pipeline will be a switch between different ways of computing word embeddings for text data, and we will be using concept drift detection algorithms for signal a change.
+
 \chapter{Framework}
 
 In this chapter, we will focus on establishing the framework in which the experiments on detecting and addressing change can be conducted. Namely, we will talk about the dataset that was chosen for these experiments and how this dataset was fed into a prototype of a data pipeline. Moreover, it will also be mentioned what models were chosen and how they were trained.
 
 \section{Dataset}
+
+In this section, we will introduce the Web of Science dataset, make a case for its selection and then show how it was repurposed as a stream of data in our pipeline.
 
 \subsection{The Web of Science} \label{wos}
 
@@ -365,9 +375,13 @@ As assumed, the results show us that the LSTM is a much better model for text cl
 \label{fig:lstm-metrics}
 \end{figure}
 
+\section{Conclusion}
+
+This chapter presented most of the preliminary work that went into this thesis before actually answering the research questions outlined in the introduction (chapter \ref{sec:intro}). It presents the Web of Science dataset and how it was transformed to a data stream, and then goes on to show how the two models that we have chosen (Naive Bayes and LSTM) were adjusted to our framework and trained, while showing their performance on the Web of Science classification task. Although this was not the purpose of this thesis, we have shown how the two models are quite different in terms of both robustness and performance, with the LSTM displaying great accuracy without any hyper-parameter tuning.
+
 \chapter{Detecting change} \label{sec:detecting}
 
-Now that we have explained the framework in which the experiments in this thesis will be conduced, we can proceed to answer the first research question outlined in chapter \ref{sec:intro}: \textbf{How can we quickly detect that the output distribution of a model has changed given a continuous stream of data, and then report on the degree of change?}.
+Now that we have explained the framework in which the experiments in this thesis will be conduced, we can proceed to answer the first research question outlined in chapter \ref{sec:intro}: \emph{How can we quickly detect that the output distribution of a model has changed given a continuous stream of data, and then report on the degree of change?}.
 
 This chapter, and every subsequent chapter after this, will be organized as follows. We will first explain how the experiments were setup and present every important detail in order to better understand the result, which will be shown after. Finally, we will interpret the results in a discussion.
 
@@ -538,124 +552,183 @@ The results that were presented in the previous section showcase two important p
 
 \chapter{Addressing change} \label{sec:addressing}
 
-Two methods of addressing change:
-\begin{itemize}
-    \item For small abrupt drift or gradual drift, we can probably get away with feeding the model with a few batch and the accuracy should recover fairly fast.
-    \item For big abrupt drift, one idea for adaptation is to create a mapping between the two different embedding sets.
-\end{itemize}
+After having solved the problem of detecting change in a data stream when the embeddings space is altered, this chapter now turns to addressing the issues caused by that change. Specifically, it attemps to answer the second research question outlined in the introduction (chapter \ref{sec:intro}), together with its two sub-questions: \emph{Given that a change was detected, how can we adapt the model efficiently such that the performance is the same as it previously was before the change?}. The work will be presented in the next two sections, with the first one focusing on addressing small abrupt drift, where we can probably recover the original accuracy just by fine-tuning the model with a few batches from the new embeddings space. The second section in this chapter focuses on the much harder task of adapting to big abrupt drift, where the idea is to find a mapping between the two embedding spaces.
 
-Also mention that adaptation is useful only for the LSTM model, since the Naive Bayes is trained very fast and as such not worth performing an adaptation. Moreover, the Naive Bayes is not robust to changes in the embedding space and as such adaptation methods will probably fail.
+It is also worth mentioning that since one of the big motivations of this thesis was to save both the time and the compute cost associated with training big neural network models, we will only be attempting to address the changes that happen to the LSTM model, not the Naive Bayes one. This is because the Naive Bayes model requires almost no time and computation cost to train, and so adapting it is just akin to retraining it from scratch.
 
-\section{Fine Tuning}
+\section{Fine-Tuning} \label{sec:fine}
+
+Starting of with the first part of second research question: \emph{Given a small change (gradual drift or small abrupt drift), can we adapt the model by feeding it with a few examples, compared to retraining it from scratch?}, we address the small performance drop in the LSTM model (as seen in figure \ref{fig:lstm-diff-embed-B-D}) using a fine-tuning approach. Transfer learning has been an active area of research in deep learning for a few years now, keeping on trend with the need to make models cheaper and faster to train (\cite{survey-transfer-learning}). It is a technique that aims to exploit the knowledge gained in one type of problem on another related task or domain. Typically, the first layers of a neural network contain low level information about the task (such as edges or colors in the convolutional layers of a CNN according to \cite{survey-transfer-learning}), such that one can retrain only the last few layers of the network for the new task on which adaptation is required. This method is called fine-tuning, and altough it still requires some amount of learning, it is still much faster a full retrain.
+
+Since the BERT and DistilBERT embeddings are so closely related by construction (\cite{distilbert}), we reckon we can use the fine-tuning approach in order to adapt the model from one embedding space to the other. \cite{fine-tuning-cd-image} mention that they use a similar approach to adapt an image dataset that suffers from concept drift for a classification task.
 
 \subsection{Experimental Setup}
 
-Mention things like:
-\begin{itemize}
-    \item Using the same framework as in the detecting change section to keep things consistent.
-    \item Experiments with different number of batches
-    \item Also randomly select batches
-\end{itemize}
+The approach taken to adapt the LSTM model to the DistilBERT embeddings is based on how convolutional neural networks are adapted to new datasets. Remember from section \ref{sec:lstm} that the architecture of the model was made out of two LSTM layers followed by a final fully connected layer that was used for classification. Since the LSTM layers learn the structure of text by determining the long term dependencies between the words (\cite{colahlstm}), we will keep these layers frozen, and only retrain the final classification layer. Since the fully connected layer only has a few parameters (2816 to be precise), the model can be adapted much faster than the time required to also retrain the two LSTM layers.
+
+The experiments will take place in the same framework as those in the previous chapter, and they will have the same structure right before the adaptation part. We will start of with running the pipeline on the stream on which the model was trained on to build the statistics of the change detector, then we switch the embeddings while feeding the accuracies to the change detector and waiting for it to trigger warnings or drifts, and after the changed stream is finished, we finally move to the adaptation part. This final step of these experiments consist of re-running the stream with DistilBERT embeddings (this time with no change detector), and using the batches to train the classification layer of the LSTM while keeping track of the training accuracies to see if the model improves.
+
+The adaptation part of the experiments will be run for 50, 100, and 200 batches to see how many are needed for the model to adapt properly. Moreover, the batches will be fed in random order as opposed to the other steps where the batches came in deterministically. This was to make sure that the model didn't see only batches that belonged to just a few classes, but actually receives a samples that are representative of the whole dataset.
 
 \subsection{Results}
 
-Present the results for fine tuning.
+The results for the fine-tuning approach when switching from BERT to DistilBERT embeddings, thus creating a small drop in performance, are shown in figure \ref{fig:fine}. As mentioned above, we ran these experiments with three numbers of batches: 50, 100, and 200, which are shown in figures \ref{fig:fine50}, \ref{fig:fine100}, and \ref{fig:fine200} respectively. The figures show that, indeed, the fine-tuning approach manages to recover the accuracy of the model without needing to retrain the LSTM layers. While 50 seems to be too low of a number of batches for recovery, 100 already shows signs of clear improvement, while finally towards the end of the 200 batches it is quite clear that the performance of the model has recovered.
 
-\begin{figure}[ht!]
+It is important to mention that the number of batches that need to be fed to the model in order for it to adapt is completely dependent on the actual model. While 200 batches work for this particular LSTM model, a different model may require a different number of batches. In most of the cases, however, fine-tuning should always manage to adapt the model quite fast, without needing to retrain from scratch.
+
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/fine_tuning_lstm_wos_1_BERT_DISTILBERT_50_batches.png}
-\caption{Fine tuning experiments using 50 batches}
+\begin{subfigure}{.48\textwidth}
+\centering
+\includegraphics[width=\linewidth]{assets/addressing-change/fine_tuning_lstm_wos_1_BERT_DISTILBERT_50_batches.png}
+\caption{Fine-tuning experiments using 50 batches}
 \label{fig:fine50}
-\end{figure}
-
-\begin{figure}[ht!]
+\end{subfigure}
+\begin{subfigure}{.48\textwidth}
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/fine_tuning_lstm_wos_1_BERT_DISTILBERT_100_batches.png}
-\caption{Fine tuning experiments using 100 batches}
+\includegraphics[width=\linewidth]{assets/addressing-change/fine_tuning_lstm_wos_1_BERT_DISTILBERT_100_batches.png}
+\caption{Fine-tuning experiments using 100 batches}
 \label{fig:fine100}
+\end{subfigure}
+\begin{subfigure}{.55\textwidth}
+\centering
+\includegraphics[width=\linewidth]{assets/addressing-change/fine_tuning_lstm_wos_1_BERT_DISTILBERT_200_batches.png}
+\caption{Fine-tuning experiments using 200 batches}
+\label{fig:fine200}
+\end{subfigure}
+\caption{Fine-tuning experiments}
+\label{fig:fine}
 \end{figure}
 
-TODO: also make and add results for a full epoch
+\cleardoublepage
+\section{Mapping} \label{sec:map}
 
-TODO: might also want to create new pictures in which you run a fourth stream using already fine tuned network.
+Part two of the second research question turns our attention to addressing a substantial drop in the performance of the model and answering the following: \emph{Given a big change (big abrupt drift), can we adapt the model by finding a mapping between the old outputs and the new ones which is less expensive to compute than retraining the model from scratch?}. As mentioned in the question above, this complicated problem will be approached by trying to find a mapping from the new embeddings (SciBERT) to the old ones (BERT), thus keeping the model trained on the BERT embeddings frozen and adding a new component to our framework \ref{fig:framework} through which all inputs will be going through such that they are switched from SciBERT to BERT so the model can understand them.
 
-\subsection{Discussion}
+The Natural Language Processing field has been studying this mapping idea for a few years now, but in the different context of trying to learn cross-lingual word embeddings. These methods attempt to find a mapping between embeddings for a source language and embeddings for a target language such that a model trained on the source languge embeddings can also work with inputs that come from the target language. \cite{mikolov2013distributed} first suggested this approach as an extension to their seminal \textbf{word2vec} paper (\cite{word2vec}), in which they contruct a parallel corpus of words, each with a representation in the source embeddings space and the target embeddings space. The source matrix will be denoted as $S$, while the target matrix as $T$. They found that learning a simple linear mapping between $S$ and $T$ achieves similar results to more complicated solutions such as a multilayer neural network. Both \cite{normalized-word-embbedings} and \cite{principle-bilingual-mappings} then found that enforcing an orthogonality constraint on the mapping matrix achieves better results on the same tasks. By putting this constraint in the problem, we transform it to the Orthogonal Procrustes problem (\cite{procrustes}). This states that given two matrices $S$ and $T$, we would like to find a orthogonal matrix $M$ that maps $S$ to $T$ as closely as possible. This boils down to the following equation:
 
-Discussion on the fine tuning results.
+\begin{equation}
+    M = \argmin_{M'} ||M' S - T ||_F
+\end{equation}
+, where $M'^T M' = I$. The closed-form solution can be found using Singular Value Decomposition on the matrix product between $T$ and $S^T$, such that $U\Sigma V^T = \text{SVD}(TS^T)$ and $M = UV^T$. Both of the papers mentioned above rely on the assumption that there are bilingual dictionaries or parallel corpora readily available. The MUSE framework (\cite{muse}) manages to overcome this issue by employing a GAN (\cite{gan}) to train the mapping, where the generator acts as the actual mapping and the discriminator tries to guess whether a sample comes from the actual target embeddings or the mapped ones. The generator is then used a means to construct the bilingual dictionary which can finally be used to construct the linear mapping. This method manages to achieve results that are comparable with the Procrustes mapping when parallel data is actually available.
 
-\section{Mapping}
-
-Maybe split this into two parts: Procrustes method and GAN method.
-
-Explain the advantages of the Procrustes method: extremely fast, and the cons, not that reliable since it's a linear mapping. Then outline the assumption that the GAN method should be faster than retraining the whole model, and it's only worth using when that is the case.
-
-The explain the methods used for mapping, both the Procrustes and the GAN.
-
-Also talk about the created dataset and why it was needed.
+What all these methods described above have in common is that they assume that the embeddings used are non-contextualized (e.g., word2vec, glvoe), meaning that they only output one vector of embeddings per each word in the text, making it quite straightforward to construct a one to one mapping between the source and target embeddings. This is contrary to contextualized embeddings (e.g., BERT, ELMo), which can output multiple tokens per word thus producing multiple embedding vectors. Take for example the word \emph{contextualized}. Its token representation when using BERT is $\begin{bmatrix} 101 & 6123 & 8787 & 3550 & 102 \end{bmatrix}$, while its representation when using SciBERT is $\begin{bmatrix} 102 & 11695 & 645 & 103 \end{bmatrix}$, and all these tokens have their respective vector representation. As we can see, both the number of tokens is different and also the tokens do not correspond between the two representations, thus it is impossible to construct a one to one mapping between the words in this manner. Both \cite{crosslingual} and \cite{investigating-cross-lingual} have recently explored this problem in their work, but again in the context of trying to learn cross-lingual contextualized word embeddings. They define a word anchor as the aggregated representation of all the tokens in the word, where an aggregation can be either the average or the maximum of the token embeddings. They argue that a mapping learned using the anchors should hopefully generalize to the token-level embeddings as well. \cite{crosslingual} arrive at this conclusion because they plotted the token representations of a few different words and found that the tokens for a word tend to cluster together in a point cloud.
 
 \subsection{Experimental Setup}
 
-Outline assumptions and decisions made in the mapping experiments.
+Having given the necessary background into mappings between different embedding spaces, we can now explain how we are going to run our experiments. Before even talking about mappings we first need construct a suitable dataset from our existing one, since token-level embeddings cannot be aligned, as explained above. Thus, we have decided to look through the whole Web of Science dataset and find the most common 5000 or 10000 words there since picking all the words might skew the mapping because of noise. Then for all of the picked words, we can use both BERT and SciBERT to tokenize and subsequently embed them. Finally, we use the two aggregation methods described above (namely the maximum and the average) to get one embeddings representation per word resulting in the parallel dataset on which we can train a mapping.
+
+Two methods will be tried in our experiments. The first is the classic Procrustes linear mapping, where the source matrix will be the SciBERT embeddings and the target matrix the BERT embeddings, both of them for the most common 5000 words. We expect this mapping to be very fast to train since it's a simple SVD on a matrix product, but not a very accurate mapping because it's linear, thus inflexible. The second mapping that we picked was a simple multilayer perceptron with two fully connected layers that sandwich a ReLU activation function, such that the mapping is non-linear. We expect this one to be a little slower to train because even though it's a small network it still is a neural network trained using gradient descent, but it should be more flexible than the linear mapping.
+
+We will put these assumptions to test in two ways. First, we want to measure how well the source matrix is actually mapped to the target and so we will showcase this by computing the mean-squared error between the mapped source matrix and the target and visualizing the embedding spaces using both PCA (\cite{pca}) and t-SNE (\cite{tsne}). Second, we also have to check how these mappings actually translate to a potential recovery in the performance of the LSTM model. For this purpose, we again turn to our pipeline to run the Web of Science stream three times: first, using the data transformed using BERT to build the statistics of the change detector, then we change the embeddings to SciBERT and let the detector do its work, and finally we again run the SciBERT stream but this time mapped to the BERT space using either the linear or the non-linear mapping.
+
+Finally, we note that the linear mapping will be trained on the most common 5000 words, while the non-linear mapping will be trained on the most common 10000 since the MLP needs more training data.
 
 \subsection{Results}
 
-Show the results.
+We first present the results for the linear Procrustes mapping. As assumed, it was trained very fast, in just 2.34 seconds, on the 5000 most common words parallel dataset. Before the mapping, the MSE score between the source and the target is equal to $0.7274$. After mapping, that score is reduced to $0.3134$, which is quite good for an inflexible linear mapping, but still far from a robust mapping. This can also be seen from the PCA (figure \ref{fig:proc-pca}) and the t-SNE (figure \ref{fig:proc-tsne}) visualizations. The red points in the visualizations are the source (SciBERT) embeddings, the green points are the target embeddings (BERT), and finally the blue ones are the mapped embeddings. If the mapping was perfect, the green and blue point clouds should be the same, but as we can see from figures, the point clouds are still pretty far from each other.
 
-\begin{figure}[ht!]
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/procrustes_lstm_wos_1_BERT_SCIBERT_5000_words_max.png}
-\caption{Mapping using Procrustes method results using \textbf{max} embeddings aggregation in dataset}
-\label{fig:proc-max}
-\end{figure}
-
-\begin{figure}[ht!]
+\begin{subfigure}{.49\textwidth}
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/procrustes_lstm_wos_1_BERT_SCIBERT_5000_words_average.png}
-\caption{Mapping using Procrustes method results using \textbf{average} embeddings aggregation in dataset}
-\label{fig:proc-average}
-\end{figure}
-
-\begin{figure}[ht!]
-\centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/mapping_vis_pca_SCIBERT_BERT_average.png}
-\caption{Embeddings spaces visualized using PCA for the Procrustes method}
+\includegraphics[width=\linewidth]{assets/addressing-change/mapping_vis_pca_SCIBERT_BERT_average.png}
+\caption{Visualization using PCA}
 \label{fig:proc-pca}
-\end{figure}
-
-\begin{figure}[ht!]
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/mapping_vis_tsne_SCIBERT_BERT_average.png}
-\caption{Embeddings spaces visualized using t-SNE for the Procrustes method}
+\includegraphics[width=\linewidth]{assets/addressing-change/mapping_vis_tsne_SCIBERT_BERT_average.png}
+\caption{Visualization using t-SNE}
 \label{fig:proc-tsne}
+\end{subfigure}
+\caption{Visualizations for BERT, SciBERT, and the mapping between the two done using Procrustes}
+\label{fig:proc-viz}
 \end{figure}
 
-\begin{figure}[ht!]
+However, the Procrustes mapping still yields a decent improvement in the performance of the model, as can be seen from figure \ref{fig:proc-results}. The mapping manages to achieve a decent average of 0.43 accuracy with a few outliers that also reach the performance of the model with the initial embeddings.The results are quite similar when using either the maximum or the average aggregation menthods, with the maximum slightly outperforming the average.
+
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/mlp_mapping_lstm_wos_1_BERT_SCIBERT_10000_words_average.png}
-\caption{Mapping using MLP network results using \textbf{average} embeddings aggregation in dataset}
-\label{fig:mlp-average}
+\begin{subfigure}{.49\textwidth}
+\centering
+\includegraphics[width=\linewidth]{assets/addressing-change/procrustes_lstm_wos_1_BERT_SCIBERT_5000_words_max.png}
+\caption{Results using \textbf{max} embeddings aggregation in the dataset}
+\label{fig:proc-max}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+\centering
+\includegraphics[width=\linewidth]{assets/addressing-change/procrustes_lstm_wos_1_BERT_SCIBERT_5000_words_average.png}
+\caption{Results using \textbf{average} embeddings aggregation in the dataset}
+\label{fig:proc-average}
+\end{subfigure}
+\caption{Results for adaptation using the Procrustes mapping}
+\label{fig:proc-results}
 \end{figure}
 
-\begin{figure}[ht!]
+Moving on to the MLP mapping, we can see from figures \ref{fig:mlp-pca} and \ref{fig:mlp-tsne} that the BERT embeddings represented by the green point cloud and the mapped embeddings represented by the blue point cloud overlap substantially, which is to be expected since we introduced a non-linearity between the two fully connected layers that reduces the bias of the model. This is verified by the MSE scores, with a $0.7205$ before the mapping and a $0.1149$ after. The training time is much longer than the linear mapping, with 31.76 seconds, but which is still much quicker than a full retraining of the model.
+
+The full summary for the scores and training times can be seen in table \ref{table:maps}.
+
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/mlp_mapping_vis_pca_SCIBERT_BERT_average.png}
-\caption{Embeddings spaces visualized using PCA for the MLP method}
+\begin{subfigure}{.49\textwidth}
+\centering
+\includegraphics[width=\linewidth]{assets/addressing-change/mlp_mapping_vis_pca_SCIBERT_BERT_average.png}
+\caption{Visualization using PCA}
 \label{fig:mlp-pca}
-\end{figure}
-
-\begin{figure}[ht!]
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
 \centering
-\includegraphics[width=0.8\linewidth]{assets/addressing-change/mlp_mapping_vis_tsne_SCIBERT_BERT_average.png}
-\caption{Embeddings spaces visualized using t-SNE for the MLP method}
+\includegraphics[width=\linewidth]{assets/addressing-change/mlp_mapping_vis_tsne_SCIBERT_BERT_average.png}
+\caption{Visualization using t-SNE}
 \label{fig:mlp-tsne}
+\end{subfigure}
+\caption{Visualizations for BERT, SciBERT, and the mapping between them done using MLP}
+\label{fig:mlp-viz}
 \end{figure}
 
+Even though the MLP mapping manages to make the two point clouds of our dataset overlap, this however doesn't translate to good performance on our adaptation task. As can be seen from figure \ref{fig:mlp-results}, there is some accuracy improvement compared to the non-mapped stream, but it is small, and more importantly, it performs worse than the linear mapping. There is also a clear difference between the two aggregation methods here, with the average one performing better than the max one. These figures also contain a few outliers, suggesting that some tokens are mapped well.
 
-\subsection{Discussion}
+\begin{figure}[H]
+\centering
+\begin{subfigure}{.49\textwidth}
+\centering
+\includegraphics[width=\linewidth]{assets/addressing-change/mlp_mapping_lstm_wos_1_BERT_SCIBERT_10000_words_max.png}
+\caption{Results using \textbf{max} embeddings aggregation in the dataset}
+\label{fig:mlp-max}
+\end{subfigure}
+\begin{subfigure}{.49\textwidth}
+\centering
+\includegraphics[width=\linewidth]{assets/addressing-change/mlp_mapping_lstm_wos_1_BERT_SCIBERT_10000_words_average.png}
+\caption{Results using \textbf{average} embeddings aggregation in the dataset}
+\label{fig:mlp-average}
+\end{subfigure}
+\caption{Results for adaptation using the MLP mapping}
+\label{fig:mlp-results}
+\end{figure}
 
-Discuss the results.
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|l|}
+\hline
+                  & MSE before mapping & MSE after mapping & Train time \\ \hline
+Procrustes (5000 words) & 0.7274             & 0.3134            & 2.34s      \\ \hline
+MLP (10000 words)       & 0.7205             & 0.1149            & 31.76s     \\ \hline
+\end{tabular}
+\caption{MSE scores and training times for both the Procrustes and the MLP mappings}
+\label{table:maps}
+\end{table}
 
-\chapter{Conclusion and Future Work}
+\section{Discussion}
+
+We can conclude from section \ref{sec:fine} that the first part of the second research question is answered by the fine-tuning approach to adapt from small abrupt concept drift. This approach can also be used to adapt from gradual drift by just using every sample to fine-tune the model continuously throughout the runtime of the pipeline, as mentioned in \cite{fine-tuning-cd-image}. The fine-tuning can be triggered automatically whenever the model enters the warning zone, because if it is started only after a drift, the model might have diverged too far for a fine-tuning approach to work (as seen in figures \ref{fig:lstm-gradual-std-2} and \ref{fig:lstm-gradual-std-3}).
+
+As for the second part of that research question, we believe that the Procrustes mapping performs as well as it can given its linear narute, but the MLP mapping presents quite a paradox. On one hand, it maps the dataset that we contructed well, but on the other hand, it doesn't manage to adapt the model to the new embeddings SciBERT embeddings. We believe that this happens because of how we contructed the dataset using the anchors. Since the MLP is non-linear, it manages to contruct a mapping with a low MSE score but that means that it also doesn't generalize to the non-anchored dataset which is used in the LSTM model. The Procrustes method on the other hand doesn't have such a low MSE score, but this translates to less overfitting on our anchored dataset and more generalization on the initial on. We have trained to fix this generalization problem by adding a dropout layer (\cite{dropout}) to the MLP for less overfitting, but that did not fix the issues. We also believe that a more complex neural network model would not help here since the issue isn't about the flexibility of the model, but about the dataset. Thus, we conclude that the second part of the adaptation research question is not answered for now and we discuss a few ideas for future work in chapter \ref{sec:conclusion}.
+
+\chapter{Prototype Implementation} \label{sec:prototype}
+
+\chapter{Conclusion and Future Work} \label{sec:conclusion}
 
 \addcontentsline{toc}{chapter}{Bibliography}
 \setcitestyle{numbers}
