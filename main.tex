@@ -728,6 +728,23 @@ As for the second part of that research question, we believe that the Procrustes
 
 \chapter{Prototype Implementation} \label{sec:prototype}
 
+The work done in this thesis is geared more towards a real world optimization of machine learning data pipelines, and it should be of use to practicioners which operate in the NLP field that need to keep up to date with state of the art techniques but also want to reduce their costs in terms of both time and computational cost. Thus, we want to dedicate this chapter to describe a small prototype implementation of the framework outlined in this thesis for the Zeta Alpha data pipeline.
+
+Considering that Zeta Alpha's purpose is to extract scientific knowledge and make it easily accessible to both researchers and industry practicioners from around the world, the company requires an efficient and fast way to derive information from hundreds of thousands of scientific papers and blog posts. This is done using a data pipeline build using state of the art frameworks like Kafka and MongoDB. A scientific paper is put into the pipeline by a so-called \emph{ingestor}, then goes through a number of \emph{converters} that extract a representation from the paper, before finally being stored in databases like OpenDistro or DGraph. Examples of representations that can be extracted by the converters are: text out of a pdf document, citations out of a pdf document, splitting into sentences or words, cleaning the text, transforming the text to word embeddings, applying a named entity recognizer on the text, etc. Hence, we can think of the data pipeline as a sequence of nodes through which a document can go from the ingestor until being stored in a database. In the current implementation of the pipeline, each one of those converters has an input and a deterministic output.
+
+Given the current state of the pipeline, we have decided that a useful prototype of the work done in this thesis will only involve a \emph{change detector} that will act as more of an integration test for the current version of the system. Since the outputs of the converters are deterministic, we can construct a test dataset out of a few dozen scientific papers for which we know the correct outputs and store it in a database. This dataset will be sent as a probe through the pipeline at specific time intervals to check that everything still performs according to specification. For each node/converter, we check the output that it produces for the given document, and compare it against the record that we have stored in the database. If the two are not equal, then the change detector will signal a drift.
+
+When actual classification or regression machine learning models will be part of the pipeline, the plan is to extend the change detector such that it will more closely resemble the detector as it is presented in chapter \ref{sec:detecting}. Figure \ref{fig:prototype} shows how the service should interact with the pipeline once it's implemented. The leftmost node represents the ingestor, while the rightmost ones are the databases. Everything in the middle is a converter, with the red ones being actual machine learning models that can access the change detector REST endpoint. The service will store one detection algorithm such as DDM or ADWIN for each model that uses it. Thus, each time a document passes through a model converter, a metric will be computed once the prediction is made and that metric will be then inputted to the change detector, which in turn will communicate back to the model if it detects a warning or a drift.
+
+Once the detection part is completed, each model converter will also need to handle the drop in performance if a drift is signalled. At first, this will be done by a simple retraining or fine-tuning using the newly introduced embeddings, but if the performance of the mapping improves in the future, that should also be implemented in the pipeline.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\linewidth]{assets/prototype/prototype.png}
+\caption{Change detector interaction with the Zeta Alpha pipeline}
+\label{fig:prototype}
+\end{figure}
+
 \chapter{Conclusion and Future Work} \label{sec:conclusion}
 
 \addcontentsline{toc}{chapter}{Bibliography}
