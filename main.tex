@@ -127,7 +127,7 @@ Insert the acknowledgements here.
 
 \section{Research Questions}
 
-The main goal of this thesis is to develop a general framework in which machine learning models that are part of streaming data pipelines can detect changes in their output distribution and adapt to them accordingly, while also successfully applying this framework on a specific natural language processing use case that is of interest to Zeta Alpha Vector. This comprehensive topic will be tackled with the following research questions, covered below together with a short description for each question.
+The main goal of this thesis is to develop a general framework in which machine learning models that are part of streaming data pipelines can detect changes in their output distribution and adapt to them accordingly, while also successfully applying this framework on a more specific natural language processing use case that is of interest to Zeta Alpha Vector. This comprehensive topic will be tackled using the following research questions, covered below together with a short description for each question.
 
 \paragraph*{How can we quickly detect that the output distribution of a model has changed given a continuous stream of data, and then report on the degree of change?} Insert description of this research question
 
@@ -745,7 +745,17 @@ Once the detection part is completed, each model converter will also need to han
 \label{fig:prototype}
 \end{figure}
 
-\chapter{Conclusion and Future Work} \label{sec:conclusion}
+\chapter{Conclusion} \label{sec:conclusion}
+
+Throughout this thesis, we worked on making machine learning data pipelines both more autonomous and more efficient by having them detect drops in performance automatically and try to recover the lost efficacy without needing to retrain the models from scratch. Due to the vast number of different configurations that a machine learning pipeline can have, be it because of the dataset or the flavor of the chosen model, we narrowed the extensive scope of our work to the natural language processing field. We set on to show how changing word embeddings can affect both a Naive Bayes and an LSTM model and then worked on addressing the issues caused by the changes. The decision to conduct our research in this area was made because it is a particularly intersting topic  for Zeta Alpha, the company where the work was done.
+
+We concluded that change can be detected promptly in both a supervised and an unsupervised framework, while finding that different embeddings have different impacts, SciBERT producing a big abrupt change and DistilBERT only slightly dropping the performance of the model. Chapter \ref{sec:detecting} also showed that changing embeddings does not affect all models equally, the LSTM model being much more robust and resistant to perturbations in the embeddings space than the Naive Bayes one. Moving on to addressing the change, chapter \ref{sec:addressing} proves that a fine-tuning approach can adapt the model to the new embeddings much quicker than a full retrain when the pipeline only encounters a small abrupt drift. However, a big drop in the model performance of the model requires a different approach. We took inspiration from cross-lingual word embeddings to try and find a mapping between the new embeddings and the old ones, such that the model doesn't have to be adjusted at all. While the results show a significant recovery in the model's accuracy, the performance is only halfway what it used to be before the change and so this method is not yet good enough to be used in practice. Finally, chapter \ref{sec:prototype} outlines how the ideas discussed in this thesis can be applied to a production level machine learning data pipeline.
+
+\section{Future Work}
+
+There are several avenues that can be pursued based on the work done in this thesis. First, there is a clear need for improvement in the mapping method that is used to address big abrupt drift, since the results obtained in chapter \ref{sec:addressing} are not enough for the approach to be used in practice. We believe that pursuing a different model of constructing the mapping is not the way to go since the MLP already maps the aggregated dataset well, which can be seen from both the MSE score and figure \ref{fig:mlp-viz}. Instead, we propose that future work should focus its attention on coming up with a different dataset, either by finding a different way to aggregate the embeddings for a single word, or by actually searching for a way to align the actual tokens of contextualized word embeddings. The second option should result in much better results with any mapping method, since the actual embeddings are mapped, not some aggreagations of them. Moreover, even if the mapping cannot achieve the desired results, but at least get close, a combined approach of mapping and fine-tuning can then get the performance of the model back to the initial state.
+
+As previously mentioned, the framework that we set up in chapter \ref{sec:intro} is quite vast, and hence future work can attempt to expand it by working with other models, finding different agents of change other than word embeddings, or even change the field entirely to something other than natural language processing.
 
 \addcontentsline{toc}{chapter}{Bibliography}
 \setcitestyle{numbers}
